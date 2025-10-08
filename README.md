@@ -1,13 +1,3 @@
----
-title: MIGROQ Chat
-emoji: 👀
-colorFrom: blue
-colorTo: red
-sdk: gradio
-sdk_version: 5.49.0
-app_file: app.py
-pinned: false
-short_description: 'Q&A chatbot powered by llms '
----
+# Chatbot-powered-by-groq-llms-and-orchestration-with-langchain
+This is a chatbot powered by llms provided by groq APIs free plan and orchestrated using langchain graphs. 
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
