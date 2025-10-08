@@ -18,7 +18,9 @@ def invoke_groq_llm(prompt:str):
 #Streamlit app
 st.set_page_config(page_title = "Get answers to you question from groq")
 st.header("Chat with groq")
+#Get user input
 input = st.text_input("Input", key ="your question")
+#Get llm output
 response = invoke_groq_llm(input)
 submit = st.button("Get answer")
 
