@@ -3,8 +3,8 @@ title: MIGROQ_Chat
 emoji: 🤖
 colorFrom: "blue"
 colorTo: "green"
-sdk: python
-sdk_version: "3.10.7"
+sdk: streamlit
+sdk_version: "1.50.0"
 app_file: app.py
 pinned: false
 ---
