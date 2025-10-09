@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv() #Import environement variables 
 
-
+############### CHAT WITH GROQ LLM ################
 def invoke_groq_llm(prompt:str):
     groq_llm = ChatGroq(
         groq_api_key = os.environ["GROQ_API_KEY"],
@@ -28,3 +28,10 @@ if submit:
     st.subheader("Groq's answer is :")
     st.write(response)
 
+
+
+############# PROVERBs EXPERT #####################
+st.header("Use proverb expert to complete you proverbs and get their french translation")
+#Get user proverb
+input = st.text_input ("Input", key = "proverb")
+proverb_submit = st.button("Complete proverb")
