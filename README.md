@@ -16,4 +16,4 @@ This is a chatbot powered by llms provided by groq APIs and orchestrated using l
 
 - Bellow a screen shot of the app:
 
- ![Screenshot of the app ](ressources\app_screenshot.png "Optional Title")
+ ![Screenshot of the app ](ressources/app_screenshot.png)
