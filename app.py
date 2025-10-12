@@ -1,80 +1,92 @@
 import os 
+from langchain_core.messages import HumanMessage, BaseMessage, AIMessage
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.chains import SequentialChain
+from langgraph.graph import StateGraph, START, END, MessagesState
+from langgraph.checkpoint.memory import MemorySaver
+import uuid
+
 import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv() #Import environement variables 
 
-############### CHAT WITH GROQ LLM ################
-def invoke_groq_llm(prompt:str):
-    groq_llm = ChatGroq(
-        groq_api_key = os.environ["GROQ_API_KEY"],
-        model_name = "llama-3.1-8b-instant", #Check groq website for other llm ids
-        temperature = 0.6  
-        ) 
-    reponse = groq_llm.predict(prompt)
-    return reponse
-
 #Streamlit app
-st.set_page_config(page_title = "Get answers to you question from groq")
-st.header("Chat with groq")
-#Get user input
-input = st.text_input("Your question", key ="input")
-#Get llm output
-response = invoke_groq_llm(input)
-submit = st.button("Get answer")
+st.set_page_config(page_title = "Chat with advanced groq")
 
-if submit:
-    st.subheader("Groq's answer is :")
-    st.write(response)
+#################################################
+############### Advanced chatbot ################
+#################################################
 
-#Separator
-st.markdown("---")
+# Initialize LLM
+groq_llm = ChatGroq(
+    groq_api_key=os.environ["GROQ_API_KEY"],
+    model_name="llama-3.1-8b-instant",
+    temperature=0.3
+)
 
-############# PROVERBs EXPERT #####################
+# Define chatbot node
+def chatbot_node(state: MessagesState):
+    response = groq_llm.invoke(state["messages"])
+    return {"messages": [response]}
 
-def get_proverb_and_translation(proverb:str):
-    #llm
-    print ("1")
-    groq_llm = ChatGroq(
-        groq_api_key = os.environ["GROQ_API_KEY"],
-        model_name = "llama-3.1-8b-instant", #Check groq website for other llm ids
-        temperature = 0.6  
-        ) 
-    #Frist chain
-    print ("2")
-    first_template = PromptTemplate(input_variables = ["proverb"], 
-                                    template = "Complete this proverb {proverb}, return the complete proverb and nothin more.")
-    first_chain = LLMChain(llm = groq_llm, prompt = first_template, output_key = "proverb_completed")
-
-    #Second chain
-    print ("3")
-    second_template = PromptTemplate(input_variables = ["proverb_completed"],
-                                     template = """
-                                                Translate this proverbe <{proverb_completed}> to french, 
-                                                return only one translation and nothing more.
-                                                """)
-    second_chain = LLMChain(llm = groq_llm, prompt = second_template, output_key = "translation")
-
-    #Sequence 
-    print ("4")
-    sequence_chain = SequentialChain(chains = [first_chain, second_chain],
-                                     input_variables = ["proverb"],
-                                     output_variables = ["proverb_completed", "translation"])
-    output = sequence_chain({"proverb": proverb})
-    return output
+# Build graph with checkpointer
+def build_graph():
+    workflow = StateGraph(MessagesState)
+    workflow.add_node("chatbot", chatbot_node)
+    workflow.set_entry_point("chatbot")
+    workflow.add_edge("chatbot", END)
     
+    # Add memory checkpointer for persistence
+    memory = MemorySaver()
+    return workflow.compile(checkpointer=memory)
 
-st.header("Use proverb expert to complete you proverbs and get their french translation")
-#Get user proverb
-proverb = st.text_input ("Proverb", key = "proverb")
-#Get proverb completed and translation
-proverb_completed = get_proverb_and_translation(proverb)
-#
-proverb_submit = st.button("Complete proverb")
-#
-if proverb_submit:
-    st.write(proverb_completed)
+# Streamlit app
+st.title("Chat with advanced Groq")
+
+# Initialize graph once
+if "graph" not in st.session_state:
+    st.session_state.graph = build_graph()
+
+# Initialize thread_id
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = "1"
+
+# Configuration with thread_id
+config = {"configurable": {"thread_id": st.session_state.thread_id}}
+
+# Get current state from graph
+current_state = st.session_state.graph.get_state(config)
+messages = current_state.values.get("messages", []) if current_state.values else []
+
+# Display chat history
+for msg in messages:
+    if msg.type == "human":
+        st.chat_message("user").write(msg.content)
+    elif msg.type == "ai":
+        st.chat_message("assistant").write(msg.content)
+
+# Chat input
+if prompt := st.chat_input("Your message"):
+    # Display user message
+    st.chat_message("user").write(prompt)
+    
+    # Invoke graph with new message
+    result = st.session_state.graph.invoke(
+        {"messages": [("user", prompt)]},
+        config
+    )
+    
+    # Display bot response
+    st.chat_message("assistant").write(result["messages"][-1].content)
+    st.rerun()
+
+#Add start new conversatin button 
+with st.sidebar:
+    if st.button("Start new conversation"):
+        st.session_state.thread_id = uuid.uuid4()
+        st.rerun()
+
+
