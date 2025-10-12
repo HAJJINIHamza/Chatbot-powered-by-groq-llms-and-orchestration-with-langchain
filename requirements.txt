@@ -5,3 +5,4 @@ huggingface_hub
 langchain_community
 streamlit
 python-dotenv
+langgraph>0.2.27
